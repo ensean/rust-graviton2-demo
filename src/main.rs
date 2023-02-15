@@ -1,4 +1,10 @@
 extern crate ec2_instance_metadata;
+extern crate rustc_version_runtime;
+extern crate chrono;
+
+use chrono::offset::Utc;
+use chrono::DateTime;
+use std::time::SystemTime;
 use serde::Serialize;
 use actix_web::{get, web, Responder, Result};
 
@@ -10,6 +16,7 @@ pub struct RuntimeInfo {
     pub instance_type: String,
     pub instance_az: String,
     pub rust_version: String,
+    pub timestamp: String
 }
 
 impl std::fmt::Display for RuntimeInfo {
@@ -28,11 +35,16 @@ impl RuntimeInfoClient {
     pub fn get_runtime_info(&self) -> Result<RuntimeInfo, std::io::Error> {
         let client = ec2_instance_metadata::InstanceMetadataClient::new();
         let metadata = client.get().unwrap();
+
+        let system_time = SystemTime::now();
+        let datetime: DateTime<Utc> = system_time.into();
+
         let runtime_info = RuntimeInfo {
             instance_id: metadata.instance_id,
             instance_type: metadata.instance_type,
             instance_az: metadata.availability_zone,
-            rust_version: "".to_string()
+            rust_version: rustc_version_runtime::version().to_string(),
+            timestamp: datetime.format("%Y-%m-%d %T").to_string()
         };
         return Ok(runtime_info);
     }
